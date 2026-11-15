@@ -1,0 +1,83 @@
+Team name: qwerty (repository ICT-Mahidol/2026-ITCS382-Sec1-Gemini8, branch main, commit 873c772, checked on 15 November 2026)
+
+The code implements all four selected use cases (UC01, UC07, UC09 and UC04). mvn package shows BUILD SUCCESS with 53 tests and 0 failures. The evidence section of qwerty_D4_Report.md still says "To be added", but the code in ocs/ is complete enough to check. The root package is ocs.
+
+10. jdeps output of Step C2:
+
+> jdeps -verbose:package -filter:none -e "ocs.*" target/classes
+classes -> target\classes
+   ocs.app          -> ocs.app            classes
+   ocs.app          -> ocs.domain         classes
+   ocs.app          -> ocs.port           classes
+   ocs.cli          -> ocs.app            classes
+   ocs.cli          -> ocs.cli            classes
+   ocs.cli          -> ocs.domain         classes
+   ocs.cli          -> ocs.persistence    classes
+   ocs.cli          -> ocs.port           classes
+   ocs.cli          -> ocs.simulation     classes
+   ocs.domain       -> ocs.domain         classes
+   ocs.domain       -> ocs.port           classes
+   ocs.persistence  -> ocs.domain         classes
+   ocs.persistence  -> ocs.persistence    classes
+   ocs.persistence  -> ocs.port           classes
+   ocs.port         -> ocs.domain         classes
+   ocs.simulation   -> ocs.domain         classes
+   ocs.simulation   -> ocs.port           classes
+
+After skipping the first line and the 4 lines from a package to itself, 13 arrows remain. No class sits directly in the root package ocs (OcsMain is in ocs.cli), so every node drops the "ocs." prefix.
+
+My Mermaid flowchart (implemented architecture):
+flowchart TD
+    cli --> app
+    cli --> domain
+    cli --> persistence
+    cli --> port
+    cli --> simulation
+    app --> domain
+    app --> port
+    domain --> port
+    persistence --> domain
+    persistence --> port
+    port --> domain
+    simulation --> domain
+    simulation --> port
+
+These are the internal arrows of the intended architecture, as I read them from the team's package diagram (qwerty_D4_PackageDiagram.svg in qwerty_D4_Design.md). The arrows to the external JDBC, H2 and Local Storage packages are left out because -e "ocs.*" hides them.
+flowchart TD
+    cli --> app
+    cli --> persistence
+    cli --> simulation
+    app --> domain
+    app --> port
+    persistence --> domain
+    persistence --> port
+    simulation --> domain
+    simulation --> port
+
+11. From code to diagram, 9 of the 13 jdeps arrows are in the diagram and 4 are not. From diagram to code, all 9 arrows of the diagram are in the jdeps output. There is 1 cycle. I found the class behind each arrow with the class view of Step B2 (jdeps -verbose:class -filter:none -e "ocs.port.*" target/classes, and the same with "ocs.domain.*").
+
+(a) What I found: an arrow in the code that the diagram does not show.
+Where: cli -> domain. The classes are ScienceProgramCommandLine -> SciencePlan, ObservingProgram, TargetCoordinates, InstrumentSettings and EvaluationResult; StatusEnquiryCommandLine -> StatusReport, Telemetry and QualityReport; CommandSequenceCommandLine -> ObservingSequence and SequenceState; ObservingQueueCommandLine -> QueueRecommendation; and OcsMain -> Scheduler, ResourceAllocator, ProgramValidator, HealthMonitor, MotionCoordinator and more.
+What I would fix: the design. The dependency is really needed. The services return domain objects that the command lines must display, the team's own class diagram already has ScienceProgramCommandLine -> SciencePlan, and OcsMain must construct the domain services. Add the arrow cli -> domain (ParcelPoint has the same arrow).
+
+(b) What I found: an arrow in the code that the diagram does not show.
+Where: cli -> port. The only class is ocs.cli.OcsMain, which uses all nine port interfaces (ProgramRepository, QueueRepository, SequenceRepository, EventLog, SimulatorPort, ObservatoryContextPort, TelescopePort, EnclosurePort and InstrumentPort).
+What I would fix: the design. OcsMain is the composition root. It wires the adapters to the services through the port types, which is exactly what the Ports and Adapters section of the report describes. This is the same allowed case as ParcelPoint's Main -> storage.ParcelRepository. None of the four command-line classes uses a port, so it is not a shortcut. Add cli -> port to the diagram, with a note that only OcsMain may use it.
+
+(c) What I found: an arrow in the code that the diagram does not show.
+Where: port -> domain. Every port interface uses domain value types in its method signatures, for example TelescopePort -> TargetCoordinates and Telemetry; InstrumentPort -> InstrumentSettings, RawData and Telemetry; ProgramRepository -> SciencePlan and ObservingProgram; SequenceRepository -> ObservingSequence, QualityReport and RawData.
+What I would fix: the design. A port must describe its operations in the domain's own types, which is the correct direction in Ports and Adapters. The alternative, passing lists of primitives, would increase connascence of position. Add port -> domain to the diagram.
+
+(d) What I found: an arrow in the code that the diagram does not show.
+Where: domain -> port. The classes are HealthMonitor -> TelescopePort, EnclosurePort and InstrumentPort; MotionCoordinator -> TelescopePort and EnclosurePort; SubsystemTelemetryMonitor -> TelescopePort, EnclosurePort and InstrumentPort.
+What I would fix: the code. This arrow creates the cycle described in (f), and it goes against the report's own rule that domain types do not import application or adapter packages. These three classes coordinate devices for a use case, which is application work rather than a domain rule.
+
+(e) What I found: an arrow in the diagram that the code does not have.
+Where: none. All 9 internal arrows of the diagram (cli->app, cli->persistence, cli->simulation, app->domain, app->port, persistence->domain, persistence->port, simulation->domain and simulation->port) are in the jdeps output.
+What I would fix: nothing. As an extra check outside the ocs.* filter, a separate jdeps run confirms persistence -> java.sql. There is no compile-time persistence -> org.h2 dependency, because the H2 driver is loaded at runtime from the JDBC URL. The <<use>> arrow to H2 in the diagram is still correct as a runtime dependency.
+
+(f) What I found: a cycle between packages.
+Where: domain <-> port. The arrow domain -> port comes from the three classes in (d), and the arrow port -> domain comes from the port signatures in (c).
+What I would fix: the code. I would break the cycle by removing domain -> port: move HealthMonitor, MotionCoordinator and SubsystemTelemetryMonitor from ocs.domain to ocs.app, next to the services that use them (SequenceService and StatusService). No other domain class refers to them. I tried this on a scratch copy of the repository. After the move, mvn package passed all tests and jdeps no longer printed ocs.domain -> ocs.port, so domain depends on no other package and the cycle is gone. The arrows that remain (app -> port, app -> domain and port -> domain) are all allowed in the corrected diagram.
+
+After these fixes, the diagram gains cli -> domain, cli -> port and port -> domain, and the code loses domain -> port. Code and design then match with 12 arrows and no cycle.

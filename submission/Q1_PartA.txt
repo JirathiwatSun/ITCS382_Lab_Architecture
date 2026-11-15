@@ -1,0 +1,18 @@
+1. jdeps analyses bytecode, not source code. In a .class file the compiler has already resolved every type that a class uses into a fully qualified name, such as parcelpoint.service.ParcelService, so jdeps can read the real dependencies directly. In a .java file this information is incomplete: classes in the same package need no import, imports can use wildcards (import parcelpoint.domain.*), and a class can be written with its fully qualified name in the code without any import. Only compiling resolves all of these, so mvn package must run first to create target/classes. If I run jdeps before mvn package (I tested this after mvn clean), it prints only "Warning: Path does not exist: target/classes" and no dependency lines. It still exits with code 0, so an empty result means nothing was checked, not that there are no dependencies.
+
+2. These lines mean that a class uses another class in the same package. For example, Parcel uses ParcelSize and ParcelStatus, and H2ParcelRepository implements ParcelRepository. That is collaboration inside one package (its cohesion), not coupling between two packages. The package diagram only draws arrows between different packages, so a line from a package to itself can neither match nor break any arrow of the design. (cli and service have no such line only because each holds a single class.)
+
+3. Yes, the implemented architecture matches the intended architecture exactly. I compared them in both directions. From code to diagram, each of the 8 jdeps arrows (parcelpoint->cli, parcelpoint->service, parcelpoint->storage, cli->domain, cli->service, service->domain, service->storage, storage->domain) is in the package diagram. From diagram to code, the diagram has the same 8 arrows and each one is in the jdeps output. There is no extra arrow, no missing arrow and no cycle: every arrow points down towards domain, and domain depends on no other package.
+
+My Mermaid flowchart of the implemented architecture:
+flowchart TD
+    parcelpoint --> cli
+    parcelpoint --> service
+    parcelpoint --> storage
+    cli --> domain
+    cli --> service
+    service --> domain
+    service --> storage
+    storage --> domain
+
+4. Main is the composition root. It is not part of any layer; its only job is to start the program and wire the layers together. Some class has to choose the concrete H2ParcelRepository and pass it into ParcelService as a ParcelRepository (dependency injection). Doing it in Main keeps that choice in one line in one place, and Main has no business or user-interface logic, so storage details do not leak anywhere else. cli is the presentation layer. In the layered style each layer may talk only to the layer directly below it, so cli must go through service. If cli used storage directly, it would skip the service layer, bypass its rules (locker allocation and fees), and tie the user interface to the database technology. Every change of storage would then ripple into the user interface.

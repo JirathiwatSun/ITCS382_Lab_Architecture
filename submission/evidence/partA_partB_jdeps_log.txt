@@ -1,0 +1,88 @@
+ITCS382 Architecture Lab - terminal evidence for Parts A and B
+Run on 15 November 2026, JDK 25.0.5 (jdeps 25.0.5.0.2), Maven 3.10.0, folder parcelpoint-h2
+(jdeps pads its columns and ends each line with "classes"; padding shortened here)
+
+==========================================================================
+Before mvn package (after mvn clean) - question 1
+> jdeps -verbose:package -filter:none -e "parcelpoint.*" target/classes
+Warning: Path does not exist: target/classes
+(exit code 0, no dependency lines)
+
+==========================================================================
+Step A2 - original code
+> mvn package                                                     BUILD SUCCESS
+> jdeps -verbose:package -filter:none -e "parcelpoint.*" target/classes
+classes -> target\classes
+   parcelpoint          -> parcelpoint.cli          classes
+   parcelpoint          -> parcelpoint.service      classes
+   parcelpoint          -> parcelpoint.storage      classes
+   parcelpoint.cli      -> parcelpoint.domain       classes
+   parcelpoint.cli      -> parcelpoint.service      classes
+   parcelpoint.domain   -> parcelpoint.domain       classes
+   parcelpoint.service  -> parcelpoint.domain       classes
+   parcelpoint.service  -> parcelpoint.storage      classes
+   parcelpoint.storage  -> parcelpoint.domain       classes
+   parcelpoint.storage  -> parcelpoint.storage      classes
+
+==========================================================================
+Step B1 - ParcelCommandLine.listAll reads H2ParcelRepository directly
+> mvn package                                                     BUILD SUCCESS
+> jdeps -verbose:package -filter:none -e "parcelpoint.*" target/classes
+classes -> target\classes
+   parcelpoint          -> parcelpoint.cli          classes
+   parcelpoint          -> parcelpoint.service      classes
+   parcelpoint          -> parcelpoint.storage      classes
+   parcelpoint.cli      -> parcelpoint.domain       classes
+   parcelpoint.cli      -> parcelpoint.service      classes
+   parcelpoint.cli      -> parcelpoint.storage      classes     <-- NEW (layer skip)
+   parcelpoint.domain   -> parcelpoint.domain       classes
+   parcelpoint.service  -> parcelpoint.domain       classes
+   parcelpoint.service  -> parcelpoint.storage      classes
+   parcelpoint.storage  -> parcelpoint.domain       classes
+   parcelpoint.storage  -> parcelpoint.storage      classes
+
+==========================================================================
+Step B2 - class view of the storage package
+> jdeps -verbose:class -filter:none -e "parcelpoint.storage.*" target/classes
+classes -> target\classes
+   parcelpoint.Main                              -> parcelpoint.storage.H2ParcelRepository   classes
+   parcelpoint.Main                              -> parcelpoint.storage.ParcelRepository     classes
+   parcelpoint.cli.ParcelCommandLine             -> parcelpoint.storage.H2ParcelRepository   classes   <-- cause
+   parcelpoint.service.ParcelService             -> parcelpoint.storage.ParcelRepository     classes
+   parcelpoint.storage.H2ParcelRepository        -> parcelpoint.storage.ParcelRepository     classes
+   parcelpoint.storage.InMemoryParcelRepository  -> parcelpoint.storage.ParcelRepository     classes
+
+==========================================================================
+Step B3 - Parcel.saveTo(ParcelRepository) added
+> mvn package                                                     BUILD SUCCESS
+> jdeps -verbose:package -filter:none -e "parcelpoint.*" target/classes
+classes -> target\classes
+   parcelpoint          -> parcelpoint.cli          classes
+   parcelpoint          -> parcelpoint.service      classes
+   parcelpoint          -> parcelpoint.storage      classes
+   parcelpoint.cli      -> parcelpoint.domain       classes
+   parcelpoint.cli      -> parcelpoint.service      classes
+   parcelpoint.cli      -> parcelpoint.storage      classes
+   parcelpoint.domain   -> parcelpoint.domain       classes
+   parcelpoint.domain   -> parcelpoint.storage      classes     <-- NEW, forms a cycle with storage -> domain
+   parcelpoint.service  -> parcelpoint.domain       classes
+   parcelpoint.service  -> parcelpoint.storage      classes
+   parcelpoint.storage  -> parcelpoint.domain       classes
+   parcelpoint.storage  -> parcelpoint.storage      classes
+
+==========================================================================
+Step B4 - both changes undone
+> mvn clean package                                               BUILD SUCCESS
+> jdeps -verbose:package -filter:none -e "parcelpoint.*" target/classes
+classes -> target\classes
+   parcelpoint          -> parcelpoint.cli          classes
+   parcelpoint          -> parcelpoint.service      classes
+   parcelpoint          -> parcelpoint.storage      classes
+   parcelpoint.cli      -> parcelpoint.domain       classes
+   parcelpoint.cli      -> parcelpoint.service      classes
+   parcelpoint.domain   -> parcelpoint.domain       classes
+   parcelpoint.service  -> parcelpoint.domain       classes
+   parcelpoint.service  -> parcelpoint.storage      classes
+   parcelpoint.storage  -> parcelpoint.domain       classes
+   parcelpoint.storage  -> parcelpoint.storage      classes
+(identical to Step A2)

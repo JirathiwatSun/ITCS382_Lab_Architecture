@@ -1,0 +1,9 @@
+Tool: Cursor (Agent mode)
+Exact model: Claude Opus 5.5 (Anthropic)
+Date of use: 15 November 2026
+
+What I used it for: running the lab steps (mvn package, and the jdeps package and class views) for Parts A, B and C; drafting the explanations for questions 1 to 11; reading my team's package diagram; testing the fix for the domain/port cycle on a scratch copy of the team repository; rendering the Mermaid flowcharts as images.
+
+How I checked each answer:
+- Questions 1 to 9 (Parts A and B): I compared every jdeps line with the outputs printed in the lab sheet for Steps A2, B1, B2, B3 and B4, and they matched. I checked the answer about running jdeps before mvn package by running jdeps after mvn clean, which printed "Warning: Path does not exist: target/classes". I checked the explanations against the lecture terms: layered style, coupling, cohesion and connascence.
+- Questions 10 and 11 (Part C): I traced every arrow of qwerty_D4_PackageDiagram.svg by hand and compared it with the 13 jdeps arrows in both directions. For each class named by the class view, I opened the Java file and found the import, for example import ocs.port.TelescopePort; in MotionCoordinator.java. I checked the proposed fix for the cycle by building it and running the tests (all passed), then running jdeps again (domain -> port was gone).

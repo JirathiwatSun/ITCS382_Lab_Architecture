@@ -1,0 +1,21 @@
+Team: qwerty (2026-ITCS382-Sec1-Gemini8), commit 873c772, run 15 Nov 2026
+
+> jdeps -verbose:package -filter:none -e "ocs.*" target/classes
+classes -> target\classes
+   ocs.app                                            -> ocs.app                                            classes
+   ocs.app                                            -> ocs.domain                                         classes
+   ocs.app                                            -> ocs.port                                           classes
+   ocs.cli                                            -> ocs.app                                            classes
+   ocs.cli                                            -> ocs.cli                                            classes
+   ocs.cli                                            -> ocs.domain                                         classes
+   ocs.cli                                            -> ocs.persistence                                    classes
+   ocs.cli                                            -> ocs.port                                           classes
+   ocs.cli                                            -> ocs.simulation                                     classes
+   ocs.domain                                         -> ocs.domain                                         classes
+   ocs.domain                                         -> ocs.port                                           classes
+   ocs.persistence                                    -> ocs.domain                                         classes
+   ocs.persistence                                    -> ocs.persistence                                    classes
+   ocs.persistence                                    -> ocs.port                                           classes
+   ocs.port                                           -> ocs.domain                                         classes
+   ocs.simulation                                     -> ocs.domain                                         classes
+   ocs.simulation                                     -> ocs.port                                           classes
