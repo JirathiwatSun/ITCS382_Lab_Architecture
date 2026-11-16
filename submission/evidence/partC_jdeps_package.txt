@@ -1,8 +1,7 @@
-Team: qwerty (2026-ITCS382-Sec1-Gemini8), commit 873c772, run 15 Nov 2026
+Team: qwerty (2026-ITCS382-Sec1-Gemini8), commit bd2d68c, run 16 Nov 2026
 
 > jdeps -verbose:package -filter:none -e "ocs.*" target/classes
 classes -> target\classes
-   ocs.app                                            -> ocs.app                                            classes
    ocs.app                                            -> ocs.domain                                         classes
    ocs.app                                            -> ocs.port                                           classes
    ocs.cli                                            -> ocs.app                                            classes
