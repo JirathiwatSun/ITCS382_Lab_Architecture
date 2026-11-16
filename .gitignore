@@ -1,9 +1,23 @@
+# Clones of the Phase 2 team repo (not part of this lab submission)
 team-repo/
 team-repo-latest/
+
+# Build / runtime
 target/
 data/
+
+# Local scratch images and AI helper drafts (do not publish)
 *.png
 !submission/diagrams/*.png
 old_pkg.svg
 pkg*.png
 z_*.png
+make_answers_pdf.py
+Lab_Architecture_Quiz_Answers.md
+*.prompt.md
+*prompt*.txt
+*_draft*
+scratch/
+
+# Instructor handout (keep locally; do not republish)
+Lab_Intended and Implemented Architecture_v3.pdf
